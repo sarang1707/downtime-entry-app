@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
-import os
 
 # ------------------------------
 # App Configuration
@@ -13,69 +12,42 @@ st.set_page_config(
 )
 
 # ------------------------------
-# Paths & Machines
+# Machines
 # ------------------------------
-DATA_DIR = r"S:\Monitor Åstorp\Maskiner & underhåll\Förebyggande underhåll (Preventive Maintenance)\Underhåll maintenance\Downtime report data\Automatic downtime reports"
-os.makedirs(DATA_DIR, exist_ok=True)
-
 MACHINES = {
     "LVD": "🛠️",
     "Euromac 1": "🏗️",
     "Euromac 2": "🏗️"
 }
 
-DATA_FILES = {
-    m: os.path.join(DATA_DIR, f"{m.replace(' ', '_')}_downtime.csv")
-    for m in MACHINES
-}
-
-FAULT_FILES = {
-    m: os.path.join(DATA_DIR, f"{m.replace(' ', '_')}_faults.csv")
-    for m in MACHINES
-}
-
 # ------------------------------
-# Load Functions
+# Load Default Faults
 # ------------------------------
-def load_data(path):
-    if os.path.exists(path):
-        return pd.read_csv(path)
-    return pd.DataFrame(
-        columns=["Date", "Fault", "Start Time", "Downtime (min)", "End Time"]
-    )
-
-def load_faults(path):
-    if os.path.exists(path):
-        return pd.read_csv(path)["Fault"].tolist()
-
-    default_faults = [
-        "Idle time (800)",
-        "Suction cups (801)",
-        "Faulty sensor (802)",
-        "Thickness measurement (803)",
-        "Tool change (804)",
-        "Compensator (805)",
-        "Press control unit (806)",
-        "Tool Sync (807)",
-        "Preload fail (808)",
-        "Tool Broken (809)",
-        "Overtravel (810)"
-    ]
-    pd.DataFrame({"Fault": default_faults}).to_csv(path, index=False)
-    return default_faults
+DEFAULT_FAULTS = [
+    "Idle time (800)",
+    "Suction cups (801)",
+    "Faulty sensor (802)",
+    "Thickness measurement (803)",
+    "Tool change (804)",
+    "Compensator (805)",
+    "Press control unit (806)",
+    "Tool Sync (807)",
+    "Preload fail (808)",
+    "Tool Broken (809)",
+    "Overtravel (810)"
+]
 
 # ------------------------------
 # Session State Init
 # ------------------------------
 if "data_dfs" not in st.session_state:
     st.session_state.data_dfs = {
-        m: load_data(DATA_FILES[m]) for m in MACHINES
+        m: pd.DataFrame(columns=["Date", "Fault", "Start Time", "Downtime (min)", "End Time"])
+        for m in MACHINES
     }
 
 if "fault_lists" not in st.session_state:
-    st.session_state.fault_lists = {
-        m: load_faults(FAULT_FILES[m]) for m in MACHINES
-    }
+    st.session_state.fault_lists = {m: DEFAULT_FAULTS.copy() for m in MACHINES}
 
 if "selected_machine" not in st.session_state:
     st.session_state.selected_machine = None
@@ -86,7 +58,7 @@ if "new_fault_inputs" not in st.session_state:
 # ------------------------------
 # UI – Machine Selection
 # ------------------------------
-st.title("🛠️ Multi-Machine Downtime Tracker")
+st.title("🛠️ Multi-Machine Downtime Tracker (GitHub Version)")
 st.markdown("Select a machine to manage downtime and faults:")
 
 cols = st.columns(len(MACHINES))
@@ -158,11 +130,6 @@ if selected_machine:
                 ignore_index=True
             )
 
-            st.session_state.data_dfs[selected_machine].to_csv(
-                DATA_FILES[selected_machine],
-                index=False
-            )
-
             st.success("✅ Downtime entry added!")
 
         # ------------------------------
@@ -196,10 +163,6 @@ if selected_machine:
                     drop=True,
                     inplace=True
                 )
-                st.session_state.data_dfs[selected_machine].to_csv(
-                    DATA_FILES[selected_machine],
-                    index=False
-                )
                 st.success(f"Deleted {len(delete_rows)} row(s).")
 
             st.download_button(
@@ -230,9 +193,6 @@ if selected_machine:
             new_fault = new_fault.strip()
             if new_fault and new_fault not in fault_list:
                 st.session_state.fault_lists[selected_machine].append(new_fault)
-                pd.DataFrame(
-                    {"Fault": st.session_state.fault_lists[selected_machine]}
-                ).to_csv(FAULT_FILES[selected_machine], index=False)
                 st.success(f"Added fault: {new_fault}")
             elif new_fault:
                 st.warning("⚠️ Fault already exists.")
@@ -252,9 +212,6 @@ if selected_machine:
                     st.session_state.fault_lists[selected_machine].remove(
                         fault_to_delete
                     )
-                    pd.DataFrame(
-                        {"Fault": st.session_state.fault_lists[selected_machine]}
-                    ).to_csv(FAULT_FILES[selected_machine], index=False)
                     st.success(f"Deleted fault: {fault_to_delete}")
 
         st.markdown("**Current Fault Types:**")
