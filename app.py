@@ -58,7 +58,7 @@ if "new_fault_inputs" not in st.session_state:
 # ------------------------------
 # UI – Machine Selection
 # ------------------------------
-st.title("🛠️ Multi-Machine Downtime Tracker (GitHub Version)")
+st.title("🛠️ Machine Downtime Tracker")
 st.markdown("Select a machine to manage downtime and faults:")
 
 cols = st.columns(len(MACHINES))
@@ -216,3 +216,4 @@ if selected_machine:
 
         st.markdown("**Current Fault Types:**")
         st.write(", ".join(st.session_state.fault_lists[selected_machine]))
+
